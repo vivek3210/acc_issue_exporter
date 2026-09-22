@@ -1,167 +1,183 @@
-# app.py
-
+import argparse
 import os
+import sys
 from datetime import datetime
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+PROJECT_PYTHON = BASE_DIR / ".venv" / "Scripts" / "python.exe"
+
+if PROJECT_PYTHON.exists() and Path(sys.executable).resolve() != PROJECT_PYTHON.resolve():
+    os.execv(str(PROJECT_PYTHON), [str(PROJECT_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]])
 
 import pandas as pd
-from playwright.sync_api import sync_playwright
 from dotenv import load_dotenv
 
-load_dotenv()
-
-FORMA_PROJECT_URL = os.getenv("FORMA_PROJECT_URL")
-AUTH_FILE = "auth.json"
-
-
-def export_to_excel(issues):
-
-    if not os.path.exists("exports"):
-        os.makedirs("exports")
-
-    filename = (
-        f"exports/rovisys_issues_"
-        f"{datetime.now():%Y%m%d_%H%M%S}.xlsx"
-    )
-
-    df = pd.DataFrame(issues)
-
-    df.to_excel(
-        filename,
-        index=False
-    )
-
-    print(f"\nExcel file created: {filename}")
-
-    return filename
+TARGET_COMPANY = "Rovisys"
+OUTPUT_COLUMNS = [
+    "Issue number",
+    "Title",
+    "Description",
+    "Location",
+    "Created by",
+    "Status",
+]
 
 
-def scrape_issues():
+def normalized_columns(frame):
 
-    results = []
+    return {
+        "".join(character for character in str(column).casefold() if character.isalnum()): column
+        for column in frame.columns
+    }
 
-    with sync_playwright() as p:
 
-        browser = p.chromium.launch(
-            headless=False
+def select_column(frame, aliases):
+
+    columns = normalized_columns(frame)
+    for alias in aliases:
+        column = columns.get(
+            "".join(character for character in alias.casefold() if character.isalnum())
         )
+        if column is not None:
+            return frame[column]
 
-        # Reuse saved Autodesk login
-        if os.path.exists(AUTH_FILE):
+    return pd.Series("", index=frame.index)
 
-            context = browser.new_context(
-                storage_state=AUTH_FILE
-            )
 
-        else:
+def read_export(source):
 
-            context = browser.new_context()
-
-            print("\nNo saved login found.")
-            print("Please log into Autodesk manually.")
-
-        page = context.new_page()
-
-        page.goto(
-            FORMA_PROJECT_URL,
-            wait_until="networkidle"
-        )
-
-        # First-run login workflow
-        if not os.path.exists(AUTH_FILE):
-
-            input(
-                "\nAfter logging into Forma press ENTER..."
-            )
-
-            context.storage_state(
-                path=AUTH_FILE
-            )
-
-            print("Login session saved.")
-
-        print("Loading Issues page...")
-
-        # OPTIONAL:
-        # Replace with your actual Issues URL if needed
-        # page.goto(
-        #     f"{FORMA_PROJECT_URL}/issues",
-        #     wait_until="networkidle"
-        # )
-
-        page.wait_for_timeout(5000)
-
-        # ------------------------------------------------------------------
-        # Update these selectors after inspecting the Forma issue table
-        # ------------------------------------------------------------------
-
-        issue_rows = page.locator(
-            "[data-testid='issue-row']"
-        )
-
-        count = issue_rows.count()
-
-        print(f"Found {count} issue rows")
-
-        for i in range(count):
-
+    if source.suffix.lower() == ".csv":
+        for encoding in ("utf-8-sig", "utf-16", "cp1252"):
             try:
+                return pd.read_csv(source, encoding=encoding)
+            except UnicodeDecodeError:
+                continue
+        raise ValueError(f"Could not decode CSV export: {source}")
 
-                row = issue_rows.nth(i)
+    workbook = pd.ExcelFile(source)
+    sheet = "Issues" if "Issues" in workbook.sheet_names else workbook.sheet_names[0]
+    return pd.read_excel(source, sheet_name=sheet)
 
-                title = row.locator(
-                    ".issue-title"
-                ).inner_text()
 
-                status = row.locator(
-                    ".issue-status"
-                ).inner_text()
+def export_to_excel(source):
 
-                assignee = row.locator(
-                    ".assignee"
-                ).inner_text()
+    issues = read_export(source).dropna(how="all")
+    assigned_to = select_column(issues, ["Assigned to", "Assignee"])
+    title = select_column(issues, ["Title", "Issue title"])
+    assignment_mask = assigned_to.fillna("").astype(str).str.contains(
+        TARGET_COMPANY,
+        case=False,
+        na=False,
+    )
+    title_mask = title.fillna("").astype(str).str.lstrip().str.startswith(
+        "RBT EPMS",
+        na=False,
+    )
+    issues = issues[assignment_mask | title_mask].copy()
 
-                company = row.locator(
-                    ".company-name"
-                ).inner_text()
+    description = select_column(
+        issues,
+        ["Description", "Title", "Issue title"],
+    )
+    title = select_column(issues, ["Title", "Issue title"])
+    description = description.fillna("")
+    description = description.where(description.astype(str).str.strip().ne(""), title)
 
-                if company.strip().lower() != "rovisys":
-                    continue
+    created_by = select_column(
+        issues,
+        ["Created by", "Created By", "Creator", "Author"],
+    )
+    created_by = created_by.fillna("").astype(str).str.split("\n").str[0].str.strip()
 
-                issue = {
-                    "Title": title,
-                    "Status": status,
-                    "Assignee": assignee,
-                    "Company": company,
-                }
+    issues = pd.DataFrame(
+        {
+            "Issue number": select_column(
+                issues,
+                ["Issue number", "Issue ID", "ID", "Number"],
+            ),
+            "Title": select_column(
+                issues,
+                ["Title", "Issue title"],
+            ),
+            "Description": description,
+            "Location": select_column(
+                issues,
+                ["Location", "Location description", "Area"],
+            ),
+            "Created by": created_by,
+            "Status": select_column(
+                issues,
+                ["Status", "Issue status"],
+            ),
+        }
+    )
 
-                results.append(issue)
+    export_dir = BASE_DIR / "exports"
+    export_dir.mkdir(exist_ok=True)
+    destination = export_dir / (
+        f"rovisys_issues_{datetime.now():%Y%m%d_%H%M%S}.xlsx"
+    )
+    with pd.ExcelWriter(destination, engine="xlsxwriter") as writer:
+        issues.to_excel(writer, index=False, sheet_name="Issues")
+        worksheet = writer.sheets["Issues"]
+        row_count, column_count = issues.shape
 
-            except Exception as ex:
+        worksheet.freeze_panes(1, 0)
+        worksheet.set_column("A:A", 16)
+        worksheet.set_column("B:B", 55)
+        worksheet.set_column("C:C", 70)
+        worksheet.set_column("D:D", 45)
+        worksheet.set_column("E:E", 28)
+        worksheet.set_column("F:F", 16)
 
-                print(
-                    f"Row {i} skipped: {ex}"
-                )
+        if row_count:
+            worksheet.add_table(
+                0,
+                0,
+                row_count,
+                column_count - 1,
+                {
+                    "name": "RovisysIssues",
+                    "style": "Table Style Medium 2",
+                    "columns": [
+                        {"header": column} for column in issues.columns
+                    ],
+                },
+            )
 
-        browser.close()
-
-    return results
+    print(f"\nRovisys-assigned Issues Found: {len(issues)}")
+    print(f"Excel file created: {destination}")
+    return destination
 
 
 def main():
 
-    if not FORMA_PROJECT_URL:
-
-        raise ValueError(
-            "FORMA_PROJECT_URL is missing from .env"
-        )
-
-    issues = scrape_issues()
-
-    print(
-        f"\nRoviSys Issues Found: {len(issues)}"
+    load_dotenv(BASE_DIR / ".env")
+    parser = argparse.ArgumentParser(
+        description="Convert an Autodesk ACC Issues export to Excel."
     )
+    parser.add_argument(
+        "--file",
+        type=Path,
+        help="Existing ACC CSV/XLSX export to convert.",
+    )
+    args = parser.parse_args()
 
-    export_to_excel(issues)
+    if args.file:
+        source = Path(str(args.file).strip().strip('"')).expanduser().resolve()
+    else:
+        entered_path = input("Enter the CSV or Excel filename/path: ").strip()
+        entered_path = entered_path.strip('"')
+        source = Path(entered_path).expanduser()
+        if not source.is_absolute():
+            source = BASE_DIR / source
+        source = source.resolve()
+
+    if not source.is_file():
+        raise FileNotFoundError(f"Export file does not exist: {source}")
+
+    export_to_excel(source)
 
 
 if __name__ == "__main__":

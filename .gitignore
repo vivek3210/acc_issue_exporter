@@ -1,0 +1,15 @@
+# Local credentials and authentication state
+.env
+auth.json
+
+# Browser and Python environments
+browser-profile/
+.venv/
+__pycache__/
+
+# Generated exports
+exports/
+
+# Local editor and OS files
+.vscode/
+*.pyc
