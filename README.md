@@ -167,7 +167,7 @@ Regenerate the file with the current version of the script and ensure `XlsxWrite
 
 The exporter does not need Autodesk credentials. Sign in through your normal browser and download the report manually. Do not store Autodesk passwords in `.env`, source files, or the repository.
 
-#TLDR
+# TLDR
 
 - Download app.exe from the releases page, copy it to some directory, doesn't matter where
 - Have the issues excel file downloaded onto your computer (as noted in the Create an ACC Report section of this readme)
