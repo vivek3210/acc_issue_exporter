@@ -1,4 +1,4 @@
-# Forma Issue Exporter
+# ACC Issue Exporter
 
 This tool converts an Autodesk Construction Cloud (ACC) Issues report into a clean, filterable Excel workbook.
 
@@ -28,7 +28,7 @@ The output is formatted as an Excel table with filter dropdowns, including a fil
 
 - Windows
 - Python 3.14 or another supported Python 3 version
-- Access to the Autodesk Construction Cloud project
+- Access to the ACC (Autodesk Construction Cloud) project
 - An ACC Issues report downloaded as `.xlsx`, `.xls`, or `.csv`
 
 The required Python packages are listed in `requirements.txt`.
@@ -38,7 +38,7 @@ The required Python packages are listed in `requirements.txt`.
 Open PowerShell in the project directory:
 
 ```powershell
-cd C:\Users\vivek.darji\Desktop\forma_issue_exporter
+cd C:\Users\YOURROVISYSUSERNAME\Desktop\forma_issue_exporter
 ```
 
 If the virtual environment does not exist, create it:
