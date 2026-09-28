@@ -91,6 +91,33 @@ You can also pass the file directly:
 
 The script accepts `.xlsx`, `.xls`, and `.csv` input files.
 
+### Run the Windows Executable
+
+A packaged Windows executable is included at:
+
+```text
+dist\app.exe
+```
+
+Copy `dist\app.exe` to the folder where you want the converter to run, then launch it from PowerShell. The executable creates the `exports` folder beside itself and accepts the same interactive prompt and `--file` option as the Python script:
+
+```powershell
+.\dist\app.exe --file "C:\Users\vivek.darji\Downloads\Issue summary-202609221901.xlsx"
+```
+
+The executable does not require Python or the project virtual environment. It still requires a downloaded ACC report as input.
+
+## Rebuild the Executable
+
+Install the project dependencies and PyInstaller in the virtual environment, then run:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt pyinstaller
+.\.venv\Scripts\pyinstaller.exe app.spec --clean --noconfirm
+```
+
+The rebuilt executable is written to `dist\app.exe`.
+
 ## Output
 
 The finished workbook is saved in the project's `exports` folder:

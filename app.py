@@ -4,11 +4,18 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
+# FIX: Check if running as a compiled PyInstaller executable
+if getattr(sys, 'frozen', False):
+    BASE_DIR = Path(sys.executable).resolve().parent
+else:
+    BASE_DIR = Path(__file__).resolve().parent
+
 PROJECT_PYTHON = BASE_DIR / ".venv" / "Scripts" / "python.exe"
 
-if PROJECT_PYTHON.exists() and Path(sys.executable).resolve() != PROJECT_PYTHON.resolve():
+# Only attempt virtual env handoff if running as a raw script
+if not getattr(sys, 'frozen', False) and PROJECT_PYTHON.exists() and Path(sys.executable).resolve() != PROJECT_PYTHON.resolve():
     os.execv(str(PROJECT_PYTHON), [str(PROJECT_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]])
+
 
 import pandas as pd
 from dotenv import load_dotenv
