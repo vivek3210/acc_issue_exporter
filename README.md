@@ -19,8 +19,9 @@ The final workbook contains these columns:
 2. Title
 3. Description
 4. Location
-5. Created by
-6. Status
+5. Company
+6. Created by
+7. Status
 
 The output is formatted as an Excel table with filter dropdowns, including a filter on `Status` for Open, Closed, Draft, and other statuses. The header row is frozen for easier scrolling.
 
