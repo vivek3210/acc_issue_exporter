@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['app.py'],
+    ['acc_issue_exporter.py'],
     pathex=[],
     binaries=[],
     datas=[],

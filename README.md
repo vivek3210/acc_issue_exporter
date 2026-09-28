@@ -75,7 +75,7 @@ Do not rename the worksheet or edit the source report before running the convert
 From the project directory, run:
 
 ```powershell
-.\.venv\Scripts\python.exe app.py
+.\.venv\Scripts\python.exe acc_issue_exporter.py
 ```
 
 When prompted, enter the full path to the downloaded report. Quoted Windows paths are supported:
@@ -87,10 +87,22 @@ When prompted, enter the full path to the downloaded report. Quoted Windows path
 You can also pass the file directly:
 
 ```powershell
-.\.venv\Scripts\python.exe app.py --file "C:\Users\vivek.darji\Downloads\Issue summary-202609221901.xlsx"
+python acc_issue_exporter.py --file "C:\Users\vivek.darji\Downloads\Issue summary-202609221901.xlsx"
 ```
 
 The script accepts `.xlsx`, `.xls`, and `.csv` input files.
+
+The answers for the company and RBT EPMS questions are cached in `input_cache.json` beside the script or executable. Press Enter to reuse a cached answer. To clear the saved answers and enter them again, run:
+
+```powershell
+python acc_issue_exporter.py --reset-cache
+```
+
+The executable supports the same option:
+
+```powershell
+.\dist\app.exe --reset-cache
+```
 
 ### Run the Windows Executable
 
@@ -137,7 +149,7 @@ Install dependencies into the project virtual environment and run the script wit
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe app.py
+python acc_issue_exporter.py
 ```
 
 ### `Export file does not exist`
@@ -146,7 +158,7 @@ Check the path entered at the prompt. Include the file extension and make sure t
 
 ### The output contains zero issues
 
-Check that the ACC report is the Issue summary for the intended project and that the source workbook contains an `Issues` worksheet. The converter includes rows assigned to `Rovisys` or rows whose title begins with `RBT EPMS`.
+Check that the ACC report is the Issue summary for the intended project and that the source workbook contains an `Issues` worksheet. The converter includes rows assigned to the company name you entered or, when enabled, rows whose title begins with the configured RBT EPMS name.
 
 ### Excel reports that it repaired the workbook
 
