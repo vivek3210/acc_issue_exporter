@@ -112,6 +112,10 @@ def export_to_excel(source):
                 issues,
                 ["Location", "Location description", "Area"],
             ),
+            "Company": select_column(
+                issues,
+                ["Company", "Organization"],
+            ),
             "Created by": created_by,
             "Status": select_column(
                 issues,
