@@ -91,6 +91,18 @@ You can also pass the file directly:
 
 The script accepts `.xlsx`, `.xls`, and `.csv` input files.
 
+The answers for the company and RBT EPMS questions are cached in `input_cache.json` beside the script or executable. Press Enter to reuse a cached answer. To clear the saved answers and enter them again, run:
+
+```powershell
+.\.venv\Scripts\python.exe app.py --reset-cache
+```
+
+The executable supports the same option:
+
+```powershell
+.\dist\app.exe --reset-cache
+```
+
 ### Run the Windows Executable
 
 A packaged Windows executable is included at:
@@ -145,7 +157,7 @@ Check the path entered at the prompt. Include the file extension and make sure t
 
 ### The output contains zero issues
 
-Check that the ACC report is the Issue summary for the intended project and that the source workbook contains an `Issues` worksheet. The converter includes rows assigned to `Rovisys` or rows whose title begins with `RBT EPMS`.
+Check that the ACC report is the Issue summary for the intended project and that the source workbook contains an `Issues` worksheet. The converter includes rows assigned to the company name you entered or, when enabled, rows whose title begins with the configured RBT EPMS name.
 
 ### Excel reports that it repaired the workbook
 

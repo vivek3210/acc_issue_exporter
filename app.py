@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import sys
 from datetime import datetime
@@ -20,7 +21,80 @@ if not getattr(sys, 'frozen', False) and PROJECT_PYTHON.exists() and Path(sys.ex
 import pandas as pd
 from dotenv import load_dotenv
 
-TARGET_COMPANY = input("What is the name of the company you want issues for in ACC? ")
+CACHE_FILE = BASE_DIR / "input_cache.json"
+DEFAULT_RBT_EPMS_NAME = "RBT EPMS"
+
+
+def load_input_cache():
+
+    try:
+        with CACHE_FILE.open(encoding="utf-8") as cache_file:
+            cache = json.load(cache_file)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+    return cache if isinstance(cache, dict) else {}
+
+
+def save_input_cache(target_company, include_rbt_epms, rbt_epms_name):
+
+    cache = {
+        "target_company": target_company,
+        "include_rbt_epms": include_rbt_epms,
+        "rbt_epms_name": rbt_epms_name,
+    }
+    try:
+        with CACHE_FILE.open("w", encoding="utf-8") as cache_file:
+            json.dump(cache, cache_file, indent=2)
+    except OSError:
+        pass
+
+
+def prompt_for_filters(reset_cache=False):
+
+    cache = {} if reset_cache else load_input_cache()
+    cached_company = str(cache.get("target_company", "")).strip()
+    target_prompt = "What is the name of the company you want issues for in ACC?"
+    if cached_company:
+        target_prompt += f" [{cached_company}]"
+    target_company = input(f"{target_prompt} ").strip() or cached_company
+    while not target_company:
+        target_company = input("A company name is required. Enter it now: ").strip()
+
+    cached_include = cache.get("include_rbt_epms")
+    include_prompt = "Do you want to include RBT EPMS issues in the export? (y/n)"
+    if isinstance(cached_include, bool):
+        include_prompt += f" [{'y' if cached_include else 'n'}]"
+    include_answer = input(f"{include_prompt}: ").strip().casefold()
+    include_rbt_epms = (
+        cached_include
+        if not include_answer and isinstance(cached_include, bool)
+        else include_answer in {"y", "yes"}
+    )
+
+    rbt_epms_name = str(cache.get("rbt_epms_name", DEFAULT_RBT_EPMS_NAME)).strip()
+    if not rbt_epms_name:
+        rbt_epms_name = DEFAULT_RBT_EPMS_NAME
+    if include_rbt_epms:
+        different_prompt = "Is the RBT EPMS name different than RBT EPMS? (y/n)"
+        has_custom_name = rbt_epms_name != DEFAULT_RBT_EPMS_NAME
+        if has_custom_name:
+            different_prompt += " [y]"
+        different_answer = input(f"{different_prompt}: ").strip().casefold()
+        use_custom_name = (
+            has_custom_name
+            if not different_answer
+            else different_answer in {"y", "yes"}
+        )
+        if use_custom_name:
+            name_prompt = f"Enter the RBT EPMS name [{rbt_epms_name}]: "
+            rbt_epms_name = input(name_prompt).strip() or rbt_epms_name
+        else:
+            rbt_epms_name = DEFAULT_RBT_EPMS_NAME
+
+    save_input_cache(target_company, include_rbt_epms, rbt_epms_name)
+    return target_company, include_rbt_epms, rbt_epms_name
+
 OUTPUT_COLUMNS = [
     "Issue number",
     "Title",
@@ -77,9 +151,13 @@ def export_to_excel(source):
         case=False,
         na=False,
     )
-    title_mask = title.fillna("").astype(str).str.lstrip().str.startswith(
-        "RBT EPMS",
-        na=False,
+    title_mask = (
+        title.fillna("").astype(str).str.lstrip().str.startswith(
+            RBT_EPMS_NAME,
+            na=False,
+        )
+        if INCLUDE_RBT_EPMS
+        else pd.Series(False, index=issues.index)
     )
     issues = issues[assignment_mask | title_mask].copy()
 
@@ -173,7 +251,17 @@ def main():
         type=Path,
         help="Existing ACC CSV/XLSX export to convert.",
     )
+    parser.add_argument(
+        "--reset-cache",
+        action="store_true",
+        help="Forget cached company and RBT EPMS answers before prompting.",
+    )
     args = parser.parse_args()
+
+    global TARGET_COMPANY, INCLUDE_RBT_EPMS, RBT_EPMS_NAME
+    TARGET_COMPANY, INCLUDE_RBT_EPMS, RBT_EPMS_NAME = prompt_for_filters(
+        reset_cache=args.reset_cache
+    )
 
     if args.file:
         source = Path(str(args.file).strip().strip('"')).expanduser().resolve()

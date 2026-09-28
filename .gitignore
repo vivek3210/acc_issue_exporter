@@ -9,6 +9,7 @@ __pycache__/
 
 # Generated exports
 exports/
+input_cache.json
 
 # Local editor and OS files
 .vscode/
