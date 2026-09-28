@@ -188,4 +188,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"\n❌ Script failed with error: {e}")
+    finally:
+        # This forces the window to stay visible regardless of success or failure
+        print("\n" + "-"*40)
+        input("Process finished. Press ENTER to close this window...")
