@@ -8,8 +8,8 @@ The ACC login and report generation are completed manually in your normal browse
 
 The output includes issues that meet either condition:
 
-- `Assigned to` contains `Rovisys`.
-- The issue `Title` starts with `RBT EPMS`.
+- `Assigned to` contains the inputted name.
+- The issue `Title` starts with `RBT EPMS`, if this field is selected as yes.
 
 Duplicate issues are included only once.
 
@@ -170,8 +170,10 @@ The exporter does not need Autodesk credentials. Sign in through your normal bro
 
 # TLDR
 
-- Download app.exe from the releases page, copy it to some directory, doesn't matter where
+- Download acc_issue_exporter.exe from the releases page, copy it to some directory, doesn't matter where
 - Have the issues excel file downloaded onto your computer (as noted in the Create an ACC Report section of this readme)
+- Input the company name as it appears in the issues tab
+- Answer the yes or no prompts regarding RBT EPMS (answer no if your company is not Rovisys)
 - Input the file path by right clicking and copying the file path of the excel exported file
 - Put that into the cmd prompt without the quotes, then check the folder where you saved the .exe
 - You will see a new folder called exports, open that folder and you will see the new excel file
