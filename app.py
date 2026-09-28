@@ -20,7 +20,7 @@ if not getattr(sys, 'frozen', False) and PROJECT_PYTHON.exists() and Path(sys.ex
 import pandas as pd
 from dotenv import load_dotenv
 
-TARGET_COMPANY = "Rovisys"
+TARGET_COMPANY = input("What is the name of the company you want issues for in ACC? ")
 OUTPUT_COLUMNS = [
     "Issue number",
     "Title",
