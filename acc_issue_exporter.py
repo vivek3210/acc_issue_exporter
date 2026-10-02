@@ -4,6 +4,9 @@ import os
 import sys
 from datetime import datetime
 from pathlib import Path
+from gooey import Gooey
+from gooey import GooeyParser
+from argparse import ArgumentParser
 
 # FIX: Check if running as a compiled PyInstaller executable
 if getattr(sys, 'frozen', False):
@@ -50,47 +53,22 @@ def save_input_cache(target_company, include_rbt_epms, rbt_epms_name):
         pass
 
 
-def prompt_for_filters(reset_cache=False):
+def prompt_for_filters(reset_cache=False, target_company=None,
+                       include_rbt_epms=False, rbt_epms_name=None):
 
     cache = {} if reset_cache else load_input_cache()
     cached_company = str(cache.get("target_company", "")).strip()
-    target_prompt = "What is the name of the company you want issues for in ACC?"
-    if cached_company:
-        target_prompt += f" [{cached_company}]"
-    target_company = input(f"{target_prompt} ").strip() or cached_company
+    target_company = str(target_company or cached_company).strip()
     while not target_company:
-        target_company = input("A company name is required. Enter it now: ").strip()
+        raise ValueError("A company name is required.")
 
-    cached_include = cache.get("include_rbt_epms")
-    include_prompt = "Do you want to include RBT EPMS issues in the export? (y/n)"
-    if isinstance(cached_include, bool):
-        include_prompt += f" [{'y' if cached_include else 'n'}]"
-    include_answer = input(f"{include_prompt}: ").strip().casefold()
-    include_rbt_epms = (
-        cached_include
-        if not include_answer and isinstance(cached_include, bool)
-        else include_answer in {"y", "yes"}
-    )
+    include_rbt_epms = bool(include_rbt_epms)
 
-    rbt_epms_name = str(cache.get("rbt_epms_name", DEFAULT_RBT_EPMS_NAME)).strip()
+    rbt_epms_name = str(rbt_epms_name or DEFAULT_RBT_EPMS_NAME).strip()
     if not rbt_epms_name:
         rbt_epms_name = DEFAULT_RBT_EPMS_NAME
-    if include_rbt_epms:
-        different_prompt = "Is the RBT EPMS name different than RBT EPMS? (y/n)"
-        has_custom_name = rbt_epms_name != DEFAULT_RBT_EPMS_NAME
-        if has_custom_name:
-            different_prompt += " [y]"
-        different_answer = input(f"{different_prompt}: ").strip().casefold()
-        use_custom_name = (
-            has_custom_name
-            if not different_answer
-            else different_answer in {"y", "yes"}
-        )
-        if use_custom_name:
-            name_prompt = f"Enter the RBT EPMS name [{rbt_epms_name}]: "
-            rbt_epms_name = input(name_prompt).strip() or rbt_epms_name
-        else:
-            rbt_epms_name = DEFAULT_RBT_EPMS_NAME
+    if not include_rbt_epms:
+        rbt_epms_name = DEFAULT_RBT_EPMS_NAME
 
     save_input_cache(target_company, include_rbt_epms, rbt_epms_name)
     return target_company, include_rbt_epms, rbt_epms_name
@@ -239,17 +217,42 @@ def export_to_excel(source):
     print(f"Excel file created: {destination}")
     return destination
 
-
+@Gooey(
+    program_name="ACC Issue Exporter",
+    program_description="Filter an Autodesk ACC Issues export and create an Excel file.",
+    default_size=(700, 550),
+    clear_before_run=True,
+    show_success_modal=False,
+)
 def main():
 
     load_dotenv(BASE_DIR / ".env")
-    parser = argparse.ArgumentParser(
+    parser = GooeyParser(
         description="Convert an Autodesk ACC Issues export to Excel."
     )
     parser.add_argument(
         "--file",
         type=Path,
         help="Existing ACC CSV/XLSX export to convert.",
+        widget="FileChooser",
+        gooey_options={"wildcard": "ACC exports (*.csv;*.xlsx)|*.csv;*.xlsx"},
+        required=True,
+    )
+    parser.add_argument(
+        "--company",
+        dest="target_company",
+        help="Company name to match in ACC.",
+        required=True,
+    )
+    parser.add_argument(
+        "--include-rbt-epms",
+        action="store_true",
+        help="Include issues whose title starts with the RBT EPMS name.",
+    )
+    parser.add_argument(
+        "--rbt-epms-name",
+        default=DEFAULT_RBT_EPMS_NAME,
+        help="Title prefix used for RBT EPMS issues.",
     )
     parser.add_argument(
         "--reset-cache",
@@ -260,18 +263,13 @@ def main():
 
     global TARGET_COMPANY, INCLUDE_RBT_EPMS, RBT_EPMS_NAME
     TARGET_COMPANY, INCLUDE_RBT_EPMS, RBT_EPMS_NAME = prompt_for_filters(
-        reset_cache=args.reset_cache
+        reset_cache=args.reset_cache,
+        target_company=args.target_company,
+        include_rbt_epms=args.include_rbt_epms,
+        rbt_epms_name=args.rbt_epms_name,
     )
 
-    if args.file:
-        source = Path(str(args.file).strip().strip('"')).expanduser().resolve()
-    else:
-        entered_path = input("Enter the CSV or Excel filename/path: ").strip()
-        entered_path = entered_path.strip('"')
-        source = Path(entered_path).expanduser()
-        if not source.is_absolute():
-            source = BASE_DIR / source
-        source = source.resolve()
+    source = Path(str(args.file).strip().strip('"')).expanduser().resolve()
 
     if not source.is_file():
         raise FileNotFoundError(f"Export file does not exist: {source}")
@@ -285,6 +283,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Script failed with error: {e}")
     finally:
-        # This forces the window to stay visible regardless of success or failure
         print("\n" + "-"*40)
-        input("Process finished. Press ENTER to close this window...")
+        print("Process finished.")
