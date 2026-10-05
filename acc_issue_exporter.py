@@ -235,7 +235,7 @@ def main():
         type=Path,
         help="Existing ACC CSV/XLSX export to convert.",
         widget="FileChooser",
-        gooey_options={"wildcard": "ACC exports (*.csv;*.xlsx)|*.csv;*.xlsx"},
+        gooey_options={"wildcard": "ACC exports (*.csv;*.xls;*.xlsx)|*.csv;*.xls;*.xlsx"},
         required=True,
     )
     parser.add_argument(

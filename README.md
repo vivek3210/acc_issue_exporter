@@ -2,7 +2,7 @@
 
 This tool converts an Autodesk Construction Cloud (ACC) Issues report into a clean, filterable Excel workbook.
 
-The ACC login and report generation are completed manually in your normal browser. The Python script then reads the downloaded report and creates the final workbook.
+The ACC login and report generation are completed manually in your normal browser. The exporter then reads the downloaded report and creates the final workbook through a desktop GUI.
 
 ## What Gets Exported
 
@@ -54,7 +54,7 @@ Install the dependencies:
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-The script automatically switches to `.venv` when it is run with system Python, but using the explicit command above is the most reliable option.
+The script automatically switches to `.venv` when it is run with system Python, but using the explicit command above is the most reliable option. The `Gooey` package provides the desktop interface.
 
 ## Create the ACC Report
 
@@ -70,7 +70,7 @@ The script automatically switches to `.venv` when it is run with system Python, 
 
 Do not rename the worksheet or edit the source report before running the converter. If the workbook contains an `Issues` worksheet, the script uses that worksheet automatically.
 
-## Run the Converter
+## Run the GUI Converter
 
 From the project directory, run:
 
@@ -78,47 +78,45 @@ From the project directory, run:
 .\.venv\Scripts\python.exe acc_issue_exporter.py
 ```
 
-When prompted, enter the full path to the downloaded report. Quoted Windows paths are supported:
+The **ACC Issue Exporter** window provides these controls:
 
-```text
-"C:\Users\vivek.darji\Downloads\Issue summary-202609221901.xlsx"
-```
+- **File**: choose the downloaded ACC `.csv` or Excel report with the file picker.
+- **Company**: enter the company name as it appears in the report's `Assigned to` column.
+- **Include RBT EPMS**: select this to also include issues whose title starts with the configured RBT EPMS name.
+- **RBT EPMS name**: optionally change the title prefix used by that filter.
+- **Reset cache**: clear saved filter values before running.
 
-You can also pass the file directly:
+Click **Start** to create the workbook. The GUI shows the job status while the report is being processed and returns to a completed state after the Excel file is written. The application no longer waits for an extra command-line confirmation after finishing.
 
-```powershell
-python acc_issue_exporter.py --file "C:\Users\vivek.darji\Downloads\Issue summary-202609221901.xlsx"
-```
-
-The script accepts `.xlsx`, `.xls`, and `.csv` input files.
-
-The answers for the company and RBT EPMS questions are cached in `input_cache.json` beside the script or executable. Press Enter to reuse a cached answer. To clear the saved answers and enter them again, run:
+The command-line options are also available when launching the script directly:
 
 ```powershell
-python acc_issue_exporter.py --reset-cache
+python acc_issue_exporter.py --file "C:\Users\vivek.darji\Downloads\Issue summary-202609221901.xlsx" --company "Rovisys"
 ```
 
-The executable supports the same option:
+The script accepts `.xlsx`, `.xls`, and `.csv` input files. When using the GUI, use the file picker rather than pasting a quoted path into the field.
+
+The answers for the company and RBT EPMS filters are stored in `input_cache.json` beside the script or executable. The `--reset-cache` option clears that file before the next run:
 
 ```powershell
-.\dist\app.exe --reset-cache
+python acc_issue_exporter.py --reset-cache --file "C:\Users\vivek.darji\Downloads\Issue summary-202609221901.xlsx" --company "Rovisys"
 ```
 
 ### Run the Windows Executable
 
-A packaged Windows executable is included at:
+A packaged Windows executable can be downloaded from the GitHub Releases page. The release workflow produces:
 
 ```text
-dist\app.exe
+acc_issue_exporter.exe
 ```
 
-Copy `dist\app.exe` to the folder where you want the converter to run, then launch it from PowerShell. The executable creates the `exports` folder beside itself and accepts the same interactive prompt and `--file` option as the Python script:
+Copy the executable to the folder where you want the converter to run, then double-click it or launch it from PowerShell. It opens the same GUI and creates the `exports` folder beside itself. The executable does not require Python or the project virtual environment.
+
+The executable also accepts the command-line options described above:
 
 ```powershell
-.\dist\app.exe --file "C:\Users\vivek.darji\Downloads\Issue summary-202609221901.xlsx"
+.\acc_issue_exporter.exe --file "C:\Users\vivek.darji\Downloads\Issue summary-202609221901.xlsx" --company "Rovisys"
 ```
-
-The executable does not require Python or the project virtual environment. It still requires a downloaded ACC report as input.
 
 ## Rebuild the Executable
 
@@ -129,7 +127,7 @@ Install the project dependencies and PyInstaller in the virtual environment, the
 .\.venv\Scripts\pyinstaller.exe app.spec --clean --noconfirm
 ```
 
-The rebuilt executable is written to `dist\app.exe`.
+The rebuilt executable is written to `dist\app.exe` when using `app.spec`. The GitHub Actions release workflow builds `dist\acc_issue_exporter.exe` directly from `acc_issue_exporter.py` and publishes that file.
 
 ## Output
 
@@ -154,7 +152,11 @@ python acc_issue_exporter.py
 
 ### `Export file does not exist`
 
-Check the path entered at the prompt. Include the file extension and make sure the report has finished downloading. For a path containing spaces, surrounding it with double quotes is supported.
+Use the GUI file picker and select the downloaded report. Include the file extension and make sure the report has finished downloading. When using the command line, surround paths containing spaces with double quotes.
+
+### The GUI stays on `Running`
+
+Use the current version of the script or executable. The exporter must be allowed to return after writing the workbook; it should not wait for an extra `Press ENTER` prompt. A successful run prints the output path and finishes automatically.
 
 ### The output contains zero issues
 
@@ -170,11 +172,9 @@ The exporter does not need Autodesk credentials. Sign in through your normal bro
 
 # TLDR
 
-- Download acc_issue_exporter.exe from the releases page, copy it to some directory, doesn't matter where
-- Have the issues excel file downloaded onto your computer (as noted in the Create an ACC Report section of this readme)
-- Input the company name as it appears in the issues tab
-- Answer the yes or no prompts regarding RBT EPMS (answer no if your company is not Rovisys)
-- Input the file path by right clicking and copying the file path of the excel exported file
-- Put that into the cmd prompt without the quotes, then check the folder where you saved the .exe
-- You will see a new folder called exports, open that folder and you will see the new excel file
+- Download `acc_issue_exporter.exe` from the Releases page and copy it to any folder.
+- Download an ACC Issues report as described in the Create the ACC Report section.
+- Open the exporter, choose the report, enter the company name, and select the RBT EPMS option if needed.
+- Click **Start** and wait for the GUI to show completion.
+- Open the new `exports` folder beside the executable to find the Excel workbook.
 - Done!
