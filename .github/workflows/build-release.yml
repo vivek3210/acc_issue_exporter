@@ -1,0 +1,37 @@
+name: Build and Release EXE
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers only when you push a version tag like v1.0.0 or v1.1.2
+
+jobs:
+  build:
+    runs-on: windows-latest # Windows runner creates a native Windows .exe
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11' # Matches your local development Python version
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        if (Test-Path requirements.txt) { pip install -r requirements.txt }
+
+    - name: Build executable with Icon
+      run: |
+        pyinstaller --onefile --windowed --icon=rovilogo.ico acc_issue_exporter.py
+
+    - name: Create Release and Upload EXE
+      uses: softprops/action-gh-release@v2
+      with:
+        files: dist/acc_issue_exporter.exe # PyInstaller puts a --onefile build directly into dist/
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Generated automatically by GitHub
