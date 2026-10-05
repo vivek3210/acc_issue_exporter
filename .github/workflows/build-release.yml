@@ -51,7 +51,7 @@ jobs:
         run: |
           pyinstaller `
             --clean `
-            --onefile `
+            --onedir `
             --windowed `
             --icon=rovilogo.ico `
             --collect-all gooey `
