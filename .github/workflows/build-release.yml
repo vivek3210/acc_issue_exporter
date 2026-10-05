@@ -20,30 +20,52 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: "3.11"
+          cache: "pip"
 
       - name: Install dependencies
         shell: pwsh
         run: |
           python -m pip install --upgrade pip
+          pip install -r requirements.txt
           pip install pyinstaller
-          if (Test-Path requirements.txt) {
-            pip install -r requirements.txt
-          }
 
-      - name: Verify icon exists
+      - name: Verify Gooey
         shell: pwsh
         run: |
-          if (!(Test-Path rovilogo.ico)) {
-            throw "rovilogo.ico not found in repository root"
+          python -c "from gooey import Gooey; print('Gooey OK')"
+
+      - name: Verify files exist
+        shell: pwsh
+        run: |
+          if (!(Test-Path "acc_issue_exporter.py")) {
+            throw "acc_issue_exporter.py not found"
           }
 
-      - name: Build executable
+          if (!(Test-Path "rovilogo.ico")) {
+            throw "rovilogo.ico not found"
+          }
+
+      - name: Build EXE
+        shell: pwsh
         run: |
-          pyinstaller --onefile --windowed --icon=rovilogo.ico acc_issue_exporter.py
+          pyinstaller `
+            --clean `
+            --onefile `
+            --windowed `
+            --icon=rovilogo.ico `
+            --collect-all gooey `
+            --hidden-import gooey `
+            acc_issue_exporter.py
+
+      - name: Upload EXE Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc_issue_exporter
+          path: dist/acc_issue_exporter.exe
 
       - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: dist/acc_issue_exporter.exe
