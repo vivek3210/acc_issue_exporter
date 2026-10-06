@@ -107,7 +107,7 @@ python acc_issue_exporter.py --reset-cache --file "C:\Users\vivek.darji\Download
 A packaged Windows executable can be downloaded from the GitHub Releases page. The release workflow produces:
 
 ```text
-acc_issue_exporter.exe
+ACCIssueExporter.exe
 ```
 
 Copy the executable to the folder where you want the converter to run, then double-click it or launch it from PowerShell. It opens the same GUI and creates the `exports` folder beside itself. The executable does not require Python or the project virtual environment.
@@ -115,7 +115,7 @@ Copy the executable to the folder where you want the converter to run, then doub
 The executable also accepts the command-line options described above:
 
 ```powershell
-.\acc_issue_exporter.exe --file "C:\Users\vivek.darji\Downloads\Issue summary-202609221901.xlsx" --company "Rovisys"
+.\ACCIssueExporter.exe --file "C:\Users\vivek.darji\Downloads\Issue summary-202609221901.xlsx" --company "Rovisys"
 ```
 
 ## Rebuild the Executable
@@ -127,7 +127,7 @@ Install the project dependencies and PyInstaller in the virtual environment, the
 .\.venv\Scripts\pyinstaller.exe app.spec --clean --noconfirm
 ```
 
-The rebuilt executable is written to `dist\app.exe` when using `app.spec`. The GitHub Actions release workflow builds `dist\acc_issue_exporter.exe` directly from `acc_issue_exporter.py` and publishes that file.
+The rebuilt executable is written to `dist\app.exe` when using `app.spec`. The GitHub Actions release workflow builds `dist\ACCIssueExporter.exe` directly from `acc_issue_exporter.py` and publishes that file.
 
 ## Output
 
