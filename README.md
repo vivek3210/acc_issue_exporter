@@ -172,7 +172,7 @@ The exporter does not need Autodesk credentials. Sign in through your normal bro
 
 # TLDR
 
-- Download `acc_issue_exporter.exe` from the Releases page and copy it to any folder.
+- Download `ACCIssueExporter.exe` from the Releases page and copy it to any folder.
 - Download an ACC Issues report as described in the Create the ACC Report section.
 - Open the exporter, choose the report, enter the company name, and select the RBT EPMS option if needed.
 - Click **Start** and wait for the GUI to show completion.
